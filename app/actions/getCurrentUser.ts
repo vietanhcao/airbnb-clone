@@ -16,10 +16,10 @@ export default async function getCurrentUser() {
 				email: session.user.email as string,
 			},
 		});
+		if (!currentUser) return null;
 
-    if(!currentUser) return null;
-
-    return currentUser;
+		// if data date error then convert to ISOString
+		return currentUser;
 	} catch (error) {
 		return null;
 	}
