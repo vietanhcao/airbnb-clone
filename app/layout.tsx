@@ -4,6 +4,7 @@ import getCurrentUser from "./actions/getCurrentUser";
 import ClientOnly from "./components/ClientOnly";
 import LoginModal from "./components/modals/LoginModal";
 import ResiterModal from "./components/modals/RegisterModal";
+import RentModal from "./components/modals/RentModal";
 import Navbar from "./components/navbar/Navbar";
 import "./globals.css";
 import ToasterProvider from "./providers/ToasterProvider";
@@ -28,6 +29,7 @@ export default async function RootLayout({
 					<ToasterProvider />
 					<ResiterModal />
 					<LoginModal />
+					<RentModal />
 					<Navbar currentUser={currentUser} />
 				</ClientOnly>
 				{children}
