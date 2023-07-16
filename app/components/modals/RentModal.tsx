@@ -1,10 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { FieldValues, useForm } from "react-hook-form";
 import useRentModal from "../../hooks/useRentModal";
 import Heading from "../Heading";
 import CatategoryInput from "../inputs/CatategoryInput";
+import CountrySelect from "../inputs/CountrySelect";
 import { categories } from "../navbar/Categories";
 import Modal from "./Modal";
 
@@ -44,6 +46,16 @@ const RentModal = () => {
 	});
 
 	const category = watch("category");
+	const location = watch("location");
+
+  // skip pre render for map
+	const Map = useMemo(
+		() =>
+			dynamic(() => import("../Map"), {
+				ssr: false,
+			}),
+		[location]
+	);
 
 	const setCustomeValue = (id: string, value: any) => {
 		setValue(id, value, {
@@ -110,11 +122,27 @@ const RentModal = () => {
 		</div>
 	);
 
+	if (step === STEPS.LOCATION) {
+		bodyContent = (
+			<div className="flex flex-col gap-8">
+				<Heading
+					title="Where's your place located?"
+					subtitle="Help guests find you!"
+				/>
+				<CountrySelect
+					onChange={(value) => setCustomeValue("location", value)}
+					value={location}
+				/>
+				<Map center={location?.latlng} />
+			</div>
+		);
+	}
+
 	return (
 		<Modal
 			isOpen={rentModal.isOpen}
 			onClose={rentModal.onClose}
-			onSumbit={rentModal.onClose}
+			onSumbit={onNext}
 			actionLabel={actionLabel}
 			secondaryActionLabel={secondaryActionLabel}
 			secondaryAction={step === STEPS.CATEGORY ? undefined : onBack}
