@@ -1,12 +1,26 @@
 "use client";
 
 import { Listing, Reservation, User } from "@prisma/client";
-import { useMemo } from "react";
+import axios from "axios";
+import { differenceInCalendarDays, differenceInDays } from "date-fns";
+import { eachDayOfInterval, setDate } from "date-fns/esm";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Range } from "react-date-range";
+import { toast } from "react-hot-toast";
 import Container from "../../components/Container";
 import ListingHead from "../../components/listings/ListingHead";
+import ListingReservation from "../../components/listings/ListingReservation";
 import ListtingInfo from "../../components/listings/ListtingInfo";
 import { categories } from "../../components/navbar/Categories";
+import useLoginModal from "../../hooks/useLoginModal";
 import { ListingWithUser } from "../../types";
+
+const initialDateRange = {
+	startDate: new Date(),
+	endDate: new Date(),
+	key: "selection",
+};
 
 interface ListingClientProps {
 	reservation?: Reservation[];
@@ -17,7 +31,73 @@ interface ListingClientProps {
 const ListingClient: React.FC<ListingClientProps> = ({
 	listing,
 	currentUser,
+	reservation = [],
 }) => {
+	const loginModal = useLoginModal();
+	const router = useRouter();
+
+	const disabledDates = useMemo(() => {
+		let dates: Date[] = [];
+
+		reservation.forEach((reservation) => {
+			const range = eachDayOfInterval({
+				start: new Date(reservation.startDate),
+				end: new Date(reservation.endDate),
+			});
+			dates = [...dates, ...range];
+		});
+
+		return dates;
+	}, [reservation]);
+
+	const [isLoading, setIsLoading] = useState(false);
+	const [totalPrice, setTotalPrice] = useState(listing.price);
+	const [dateRange, setDateRange] = useState<Range>(initialDateRange);
+
+	const onCreateReservation = useCallback(async () => {
+		if (!currentUser) {
+			loginModal.onOpen();
+			return;
+		}
+
+		setIsLoading(true);
+
+		axios
+			.post("/api/reservations", {
+				totalPrice,
+				startDate: dateRange.startDate,
+				endDate: dateRange.endDate,
+				listingId: listing.id,
+			})
+			.then(() => {
+				toast.success("Listing reserved successfully");
+				setDateRange(initialDateRange);
+				// Redirect to /trips
+				router.refresh();
+			})
+			.catch(() => {
+				toast.error("Something went wrong.");
+			})
+			.finally(() => {
+				setIsLoading(false);
+			});
+	}, [currentUser, dateRange, listing.id, totalPrice, router, loginModal]);
+
+	useEffect(() => {
+		if (dateRange.startDate && dateRange.endDate) {
+			const dayCount = differenceInCalendarDays(
+				dateRange.endDate,
+				dateRange.startDate
+			);
+
+			if (dayCount && listing.price) {
+				setTotalPrice(dayCount * listing.price);
+			} else {
+				setTotalPrice(listing.price);
+			}
+		}
+	}, [dateRange, listing.price]);
+
 	const category = useMemo(() => {
 		return categories.find((category) => category.label === listing.category);
 	}, [listing.category]);
@@ -52,6 +132,24 @@ const ListingClient: React.FC<ListingClientProps> = ({
 						bathroomCount={listing.bathroomCount}
 						locationValue={listing.locationValue}
 					/>
+					<div
+						className="
+							order-first
+							mb-10
+							md:order-last
+							md:col-span-3
+						"
+					>
+						<ListingReservation
+							price={listing.price}
+							totalPrice={totalPrice}
+							onChangeDate={(value) => setDateRange(value)}
+							dateRange={dateRange}
+							onSubmit={onCreateReservation}
+							disabled={isLoading}
+							disabledDates={disabledDates}
+						/>
+					</div>
 				</div>
 			</div>
 		</Container>
