@@ -17,3 +17,11 @@ const listingWithUser = Prisma.validator<Prisma.ListingArgs>()({
 
 // 2: This type will include a listing and all their user
 export type ListingWithUser = Prisma.ListingGetPayload<typeof listingWithUser>;
+
+const reservationWithListing = Prisma.validator<Prisma.ReservationArgs>()({
+	include: { listing: true },
+});
+
+export type ReservationWithListing = Prisma.ReservationGetPayload<
+	typeof reservationWithListing
+>;
