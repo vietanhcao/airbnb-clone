@@ -1,10 +1,47 @@
 "use client";
 
+import { differenceInDays } from "date-fns";
+import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 import { BiSearch } from "react-icons/bi";
+import useCountries from "../../hooks/useCountries";
 import useSearchModal from "../../hooks/useSearchModal";
 
 const Search = () => {
 	const searchModal = useSearchModal();
+	const params = useSearchParams();
+	const { getByValue } = useCountries();
+
+	const locationValue = params?.get("locationValue");
+	const startDate = params?.get("startDate");
+	const endDate = params?.get("endDate");
+	const guestCount = params?.get("guestCount");
+
+	const locationLabel = useMemo(() => {
+		if (!locationValue) return "AnyWhere";
+		return getByValue(locationValue)?.label;
+	}, [locationValue, getByValue]);
+
+	const durationLabel = useMemo(() => {
+		if (startDate && endDate) {
+			const start = new Date(startDate);
+			const end = new Date(endDate);
+			let diff = differenceInDays(end, start);
+			if (diff === 0) {
+				diff = 1;
+			}
+
+			return `${diff} Days`;
+		}
+		return "Any Week";
+	}, [startDate, endDate]);
+
+	const guestLabel = useMemo(() => {
+		if (guestCount) {
+			return `${guestCount} Guests`;
+		}
+		return "Add Guests";
+	}, [guestCount]);
 
 	return (
 		<div
@@ -36,7 +73,7 @@ const Search = () => {
             px-6
           "
 				>
-					AnyWhere
+					{locationLabel}
 				</div>
 				<div
 					className="
@@ -50,7 +87,7 @@ const Search = () => {
             text-center
           "
 				>
-					AnyTime
+					{durationLabel}
 				</div>
 				<div
 					className="
@@ -64,7 +101,7 @@ const Search = () => {
             gap-3
           "
 				>
-					<div className=" hidden sm:block">Add guests</div>
+					<div className=" hidden sm:block">{guestLabel}</div>
 					<div
 						className="
               p-2
